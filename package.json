@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/tusharncuelogic/node-hapi#readme",
   "dependencies": {
+    "async": "^2.0.1",
     "hapi": "^15.1.0",
     "inert": "^4.0.2"
   }
