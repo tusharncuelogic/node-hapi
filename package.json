@@ -1,0 +1,27 @@
+{
+  "name": "hapijs",
+  "version": "1.0.0",
+  "description": "Hapi JS test app ",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tusharncuelogic/node-hapi.git"
+  },
+  "keywords": [
+    "hapi",
+    "js"
+  ],
+  "author": "tusharncuelogic",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tusharncuelogic/node-hapi/issues"
+  },
+  "homepage": "https://github.com/tusharncuelogic/node-hapi#readme",
+  "dependencies": {
+    "hapi": "^15.1.0",
+    "inert": "^4.0.2"
+  }
+}
