@@ -2,6 +2,26 @@
 
 var hapi = require('hapi'),
     server = new hapi.Server();
+global.jwt = require('jwt-simple');
+global.jwt_secret = 'testsecretkey';
+
+const onRequest = function (request , reply) {
+    var allowed = ['/login'];   
+    if(allowed.indexOf(request.url.path) >= 0)
+    {
+        return reply.continue() ;
+    }
+    else
+    {
+        try {
+            var user =  jwt.decode(request.headers.authorization , jwt_secret) ;
+            return reply.continue();
+        } catch (err) {
+            return reply("Invalid token") ;
+        }
+    }    
+};
+
 
 server.register(require('inert'), function(err) {
 
@@ -9,8 +29,11 @@ server.register(require('inert'), function(err) {
 
     server.connection({ port: 8000 });
 
-    server.route(require('./routes/mysql'));
+    server.ext('onRequest', onRequest) ;
 
+
+    server.route(require('./routes/mysql')) ;
+    
     //server.route(require('./routes/mysql'));
     //Enable above for mongodb routing with same urls
     

@@ -5,48 +5,75 @@ global.mysqldb = mysql.createConnection({
   user     : 'root',
   password : 'root',
   database : 'users_db'
-});
-
+}) ;
 global.tbl_users = 'users';
+global.tbl_friends = 'friends';
+
+//Dont change after first set
+
 mysqldb.connect();
+var User = require('./models/user.js') ;
+var valid = {
+    id : Joi.number(),
+    name:Joi.string().min(3).max(10),
+    email : Joi.string().email(),
+    password : Joi.string().alphanum().min(3).max(20),
+    contact : Joi.number()
+};
+
+
 
 module.exports = [{
-        method: 'POST' ,
-        path: '/user',
-        handler: require('./users/new.js') ,
+        method: 'POST',
+        path: '/login',
+        handler: User.login,
         config: {
             validate: {
                 payload: {
-                    name: Joi.string().min(3).max(10).required(),
-                    email: Joi.string().email().required(),
-                    contact: Joi.number()
+                    email: valid.email ,
+                    password : valid.password
                 }
             }
         }
     },
     {
-        method: 'PUT' ,
-        path: '/user',
-        handler: require('./users/update.js') ,
+        method: 'POST',
+        path: '/signup',
+        handler: User.signup ,
         config: {
             validate: {
                 payload: {
-                    id: Joi.number().required(),
-                    name: Joi.string().min(3),
-                    email: Joi.string().email(),
-                    contact: Joi.number()
+                    name:valid.name ,
+                    email:valid.email ,
+                    password:valid.password,
+                    contact: valid.contact
                 }
             }
         }
     },
     {
-        method: 'DELETE',
-        path: '/user/{id?}',
-        handler: require('./users/delete.js'),
+        method: 'POST',
+        path: '/update',
+        handler: User.update ,
+        config: {
+            validate: {
+                payload: {
+                    id: valid.id,
+                    name: valid.name ,
+                    email: valid.email ,
+                    contact: valid.contact
+                }
+            }
+        }
+    },
+    {
+        method: ['DELETE','GET'],
+        path: '/user/delete/{id?}',
+        handler: User.delete,
         config: {
             validate: {
                 params: {
-                    id: Joi.number().required()
+                    id: valid.id
                 }
             }
         }
@@ -54,11 +81,11 @@ module.exports = [{
     {
         method: 'GET',
         path: '/user/{id?}',
-        handler: require('./users/view.js'),
+        handler: User.view ,
         config: {
             validate: {
                 params: {
-                    id: Joi.number().required()
+                    id: valid.id
                 }
             }
         }
@@ -66,12 +93,55 @@ module.exports = [{
     {
         method: 'GET',
         path: '/users',
-        handler: require('./users/users.js')
-    },
+        handler: User.users
+    },    
     {
         method: 'GET',
-        path: '/test',
-        handler: require('./test.js')
+        path: '/friends',
+        handler: User.friends ,
+        config: {
+            validate: {
+                params: {
+                    id: valid.id
+                }
+            }
+        }
+    },    
+    {
+        method: 'GET',
+        path: '/friend/add/{friendId?}',
+        handler: User.friend_add ,
+        config: {
+            validate: {
+                params: {
+                    friendId: valid.id.required()
+                }
+            }
+        }
+    },    
+    {
+        method: 'GET',
+        path: '/friend/remove/{friendId?}',
+        handler: User.friend_remove,
+        config: {
+            validate: {
+                params: {
+                    friendId: valid.id.required()
+                }
+            }
+        }
+    },    
+    {
+        method: 'GET',
+        path: '/friend/view/{friendId?}',
+        handler: User.friend_view,
+        config: {
+            validate: {
+                params: {
+                    friendId: valid.id.required()
+                }
+            }
+        }
     }];
 
 //mysqldb.end();
