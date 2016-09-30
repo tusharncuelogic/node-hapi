@@ -1,18 +1,21 @@
-var mysql      = require('mysql');
+var mysql    = require('mysql') ;
 var Joi = require('joi');
 global.mysqldb = mysql.createConnection({
   host     : 'localhost',
   user     : 'root',
   password : 'root',
   database : 'users_db'
-}) ;
+});
+
 global.tbl_users = 'users';
 global.tbl_friends = 'friends';
 
-//Dont change after first set
+//Don't change after first set
 
 mysqldb.connect();
+
 var User = require('./models/user.js') ;
+
 var valid = {
     id : Joi.number(),
     name:Joi.string().min(3).max(10),
@@ -21,17 +24,16 @@ var valid = {
     contact : Joi.number()
 };
 
-
-
 module.exports = [{
         method: 'POST',
         path: '/login',
         handler: User.login,
         config: {
+            auth: false,
             validate: {
                 payload: {
-                    email: valid.email ,
-                    password : valid.password
+                    email: valid.email.required() ,
+                    password : valid.password.required()
                 }
             }
         }
@@ -41,6 +43,7 @@ module.exports = [{
         path: '/signup',
         handler: User.signup ,
         config: {
+            auth: false,
             validate: {
                 payload: {
                     name:valid.name ,
@@ -135,13 +138,23 @@ module.exports = [{
         method: 'GET',
         path: '/friend/view/{friendId?}',
         handler: User.friend_view,
-        config: {
+        config: {            
             validate: {
                 params: {
                     friendId: valid.id.required()
                 }
             }
         }
+    },    
+    {
+        method: 'GET',
+        path: '/logout',
+        handler: User.logout
+    },    
+    {
+        method: 'GET',
+        path: '/test',
+        handler: require('./test.js')
     }];
 
 //mysqldb.end();

@@ -1,9 +1,11 @@
-var md5 = require('md5');
+var md5 = require('md5') ;
+var Promise = require('bluebird') ;
+var mysql_qry = Promise.promisify(mysqldb.query) ;
 
 //Signup
 module.exports.signup = function(req,res) {
 	var user = req.payload ;
-	mysqldb.query('SELECT * FROM '+tbl_users+' where email = "'+user.email+'"', function(err, rows) {
+	mysql_qry('SELECT * FROM '+tbl_users+' where email = "'+user.email+'"', function(err, rows) {
       	if(err) throw err;
       	if(rows.length == 0) {
       		var user = req.payload ;
@@ -15,7 +17,7 @@ module.exports.signup = function(req,res) {
       	}
       	else {
       		res({error:"Email already exist"}) ;
-      	}      	
+      	}
     });
 }
 
@@ -38,22 +40,41 @@ module.exports.login = function(req,res) {
 }
 
 module.exports.users = function(req,res) {
-	mysqldb.query('SELECT * FROM '+tbl_users+'',function(err, rows, fields) {
+	mysql_qry('SELECT * FROM '+tbl_users+'').then(function(rows) {
+      res(rows) ;
+    },function(err){res(err);});
+	/*mysqldb.query('SELECT * FROM '+tbl_users+'',function(err, rows, fields) {
       if (err) throw(err);
       res(rows) ;
-    });
+    });*/
 }
 
 module.exports.view = function(req,res) {
-	mysqldb.query('SELECT * FROM '+tbl_users+' where id = ?', req.params.id , function(err, user) {
+	mysql_query('SELECT * FROM '+tbl_users+' where id = ?', req.params.id).then(function(user){res(user);});
+	/*mysqldb.query('SELECT * FROM '+tbl_users+' where id = ?', req.params.id , function(err, user) {
       if(err) throw(err) ;
       res(user);
-    });
+    });*/
 }
 
 
 module.exports.delete = function(req,res) {
-	mysqldb.query('SELECT * FROM '+tbl_users+' where id = '+req.params.id+'', function(err, rows) {
+	mysql_query('SELECT * FROM '+tbl_users+' where id = ?', req.params.id).then(function(rows)
+	{
+		
+		if(rows.length == 0) {
+      		res({message:"No user found with this id . Please enter the correct user ID"});
+      	}
+      	else {
+		    mysqldb.query('DELETE FROM '+tbl_users+' where id = ?',req.params.id,function(err, result) {
+		      if (err) throw err ;
+		      res({success:"User deleted successfully"});
+		    });
+      	}
+
+	});
+
+	/*mysqldb.query('SELECT * FROM '+tbl_users+' where id = '+req.params.id+'', function(err, rows) {
       	if(err) throw err;
       	if(rows.length == 0) {
       		res({message:"No user found with this id . Please enter the correct user ID"});
@@ -64,16 +85,16 @@ module.exports.delete = function(req,res) {
 		      res({success:"User deleted successfully"});
 		    });
       	}
-    });
+    });*/
 }
 
-module.exports.update =  function(req, res){
+module.exports.update = function(req, res) {
 	mysqldb.query('SELECT * FROM '+tbl_users+' where id = '+req.payload.id+'', function(err, rows) {
       	if(err) throw err;
       	if(rows.length == 0) {
       		res({message:"No user found with this id . Please enter the correct user ID"});
       	}
-      	else{
+      	else {
       		var updateQryStr = '';
       		var update = [];
       		if(req.payload.name)
@@ -100,10 +121,8 @@ module.exports.update =  function(req, res){
     });
 }
 
-module.exports.friends =  function(req, res) {
-	var token = req.headers.authorization ;
-	var user  = jwt.decode(token,jwt_secret) ;
-	var qry   = 'SELECT U.id, U.name, U.email FROM '+tbl_friends +' as F inner join '+tbl_users+' U on F.friend = U.id and F.user = ' + user[0].id ;
+module.exports.friends =  function(req, res) {	
+	var qry   = 'SELECT U.id, U.name, U.email FROM '+tbl_friends +' as F inner join '+tbl_users+' U on F.friend = U.id and F.user = ' + req.user.id ;
 	var search = '';
 	if(req.query.s) {
 		qry +=' and U.name like ?';
@@ -115,13 +134,10 @@ module.exports.friends =  function(req, res) {
     });
 }
 
-module.exports.friend_add =  function(req,res) {
-
-	var token = req.headers.authorization ;
-	var user  = jwt.decode(token,jwt_secret) ;
-	mysqldb.query('SELECT * FROM '+tbl_friends+' where user = ? and friend = ?', user[0].id,  req.params.friendId ,function(err, rows) {
+module.exports.friend_add =  function(req,res) {	
+	mysqldb.query('SELECT * FROM '+tbl_friends+' where user = ? and friend = ?', [ req.user.id , req.params.friendId ] ,function(err, rows) {
 		if(rows.length == 0){
-			var query = mysqldb.query('INSERT INTO '+tbl_friends+' SET ?', {user : user[0].id , friend: req.params.friendId} , function(err,result) {
+			var query = mysqldb.query('INSERT INTO '+tbl_friends+' SET ?', {user : req.user.id , friend: req.params.friendId} , function(err,result) {
 		      if (err) throw err ;
 		      res({success: "Friend added successfully"}) ;
 		    });
@@ -130,14 +146,11 @@ module.exports.friend_add =  function(req,res) {
 		{
 			res({success: "Friend already exist"}) ;
 		}
-	});    
-
+	});
 }
 
-module.exports.friend_remove =  function(req, res) {
-	var token = req.headers.authorization ;
-	var user  = jwt.decode(token,jwt_secret) ;
-	mysqldb.query('SELECT * FROM '+tbl_friends+' where user = ? and friend = ?',[user[0].id, req.params.friendId] , function(err, friends) {
+module.exports.friend_remove =  function(req, res) {	
+	mysqldb.query('SELECT * FROM '+tbl_friends+' where user = ? and friend = ?',[req.user.id, req.params.friendId] , function(err, friends) {
       	if(err) throw(err) ;
       	if(friends.length == 0) {
 			res({success: "No such friend exist"}) ;
@@ -147,15 +160,13 @@ module.exports.friend_remove =  function(req, res) {
 			var query = mysqldb.query('DELETE FROM '+tbl_friends+' WHERE id = ? ',friends[0].id , function(err, result) {
 		      if (err) throw err ;
 		      res({success: "Friend removed successfully"}) ;
-		    });			
+		    });
 		}
     });
 }
 
-module.exports.friend_view =  function(req, res) {
-	var token = req.headers.authorization ;
-	var user  = jwt.decode(token,jwt_secret) ;
-	mysqldb.query('SELECT * FROM '+tbl_friends+' where user = ? and friend = ?',[user[0].id, req.params.friendId] , function(err, friends) {
+module.exports.friend_view =  function(req, res) {	
+	mysqldb.query('SELECT * FROM '+tbl_friends+' where user = ? and friend = ?',[req.user.id, req.params.friendId] , function(err, friends) {
       	if(err) throw(err) ;
       	if(friends.length == 0) {
 			res({error: "It's not your friend."}) ;
@@ -167,5 +178,12 @@ module.exports.friend_view =  function(req, res) {
 		      res(friend) ;
 		    });			
 		}
+    });
+}
+
+module.exports.logout = function(req,res) {
+	mysqldb.query('UPDATE '+tbl_users+' SET token = "" where id = ?', req.user.id, function(err, result) {
+      if(err) throw(err);
+      res({success : "You have successfully logged out"});
     });
 }

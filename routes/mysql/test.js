@@ -1,53 +1,37 @@
 var async = require("async");
+var Promise = require('bluebird') ;
+var mysql_qry = Promise.promisify(mysqldb.query) ;
 
-module.exports = function(request , reply) {
-	var dt = [];
 
-	/*sendUserData("Tushar",function(response) {
-		setTimeout(function () {
-			console.log("Got reponse") ;
-		  	dt = response;
-		}, 100) ;
+module.exports  = function(req,res) {
+
+	mysql_qry("SELECT * FROM users").then(function(users) {
+		res(users);
+	},function(err){res("okkk");});
+
+	/*sendUserDataA("sendUserDataA Method called").then(function(response){
+		res(response) ;
 	});*/
 
-	/*async.map(['Tushar','Piyush','Sandeep'], sendUserData ,function(err,results){
-		dt = results ;
-		console.log(results) ;
-	});*/
-
-	async.series([
-	    sendUserData.bind(null, "Tushar Test") ,
-	    sendUserData.bind(null, "Tushar Test 2") ,
-	    sendUserData.bind(null, "Tushar Test 3") 
-	]);
-	
-	/*async.series([
-	    sendUserData("Tushar Testing", function(){
-	    	console.log("Procesed first callback");
-	    }),
-	    sendUserData("Tushar Testing 2", function(){
-	    	console.log("Procesed second callback");
-	    })
-	],
-	function(err, results) {
-		console.log("Prcesed all cbs");
-		console.log(results);
-	});*/
-
-    console.log("Response");  
-    return reply(dt);  
-    
-
+	/*
+	sendUserDataWithPromise("Tushar").then(function(result){
+		res(result);
+	},function(err){res(err);});
+	*/
 }
 
-global.sendUserData = function(username , cb ) {
-	console.log(username);
-	setTimeout(function () {
-		cb(null,{username:username}) ;
-	}, 100) ;	
+sendUserDataWithPromise = function(username) {
+	return new Promise(function (resolve, reject) {
+        if(username=='Tushar'){
+        	reject("Error in username") ;
+        }
+        else
+        {
+        	resolve("Username is "+ username) ; 
+        }
+    });
 }
 
-global.sendUserData2 = function(username , cb ){
-	//var err = new Error("Errr occured");
-	cb({username:username}) ;
+global.sendUserData = function(username,cb) {	
+	cb(null,{username:username}) ;
 }
