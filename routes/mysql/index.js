@@ -1,28 +1,12 @@
-var mysql    = require('mysql') ;
-var Joi = require('joi');
-global.mysqldb = mysql.createConnection({
-  host     : 'localhost',
-  user     : 'root',
-  password : 'root',
-  database : 'users_db'
-});
-
-global.tbl_users = 'users';
-global.tbl_friends = 'friends';
-
-//Don't change after first set
-
-mysqldb.connect();
-
+const Joi = require('joi') ;
 var User = require('./models/user.js') ;
-
 var valid = {
     id : Joi.number(),
     name:Joi.string().min(3).max(10),
     email : Joi.string().email(),
     password : Joi.string().alphanum().min(3).max(20),
     contact : Joi.number()
-};
+} ;
 
 module.exports = [{
         method: 'POST',

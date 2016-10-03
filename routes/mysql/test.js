@@ -1,23 +1,8 @@
-var async = require("async");
-var Promise = require('bluebird') ;
-var mysql_qry = Promise.promisify(mysqldb.query) ;
-
-
+var DB = require('./config.js') ;
 module.exports  = function(req,res) {
-
-	mysql_qry("SELECT * FROM users").then(function(users) {
-		res(users);
-	},function(err){res("okkk");});
-
-	/*sendUserDataA("sendUserDataA Method called").then(function(response){
-		res(response) ;
-	});*/
-
-	/*
-	sendUserDataWithPromise("Tushar").then(function(result){
-		res(result);
-	},function(err){res(err);});
-	*/
+	DB.conn.queryAsync("SELECT * FROM users").then(function(users) {
+		res(users) ;
+	});
 }
 
 sendUserDataWithPromise = function(username) {
