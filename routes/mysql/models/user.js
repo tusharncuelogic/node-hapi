@@ -13,7 +13,7 @@ module.exports.signup = function(req,res) {
 		    });
       	}
       	else {
-      		res({error:"Email already exist"}) ;
+      		res({error:"Email already exist"});
       	}
     });
 }
@@ -24,8 +24,8 @@ module.exports.login = function(req,res) {
       		res({error:"Invalid credentials. Please try with different credentials"}) ;
       	}
       	else {
-      		var user  = rows[0] ;
-      		var token = jwt.encode(rows,jwt_secret) ;
+      		var user = rows[0];
+      		var token = jwt.sign({id:user.id},jwt_secret) ;
       		DB.conn.queryAsync('UPDATE '+DB.tbl_users+' SET token = "'+token+'" where id = '+user.id).then(function(result) {
 		      res({success : "User logged in successfully",token : token});
 		    });
@@ -92,11 +92,11 @@ module.exports.friends =  function(req, res) {
 	var qry   = 'SELECT U.id, U.name, U.email FROM '+DB.tbl_friends +' as F inner join '+DB.tbl_users+' U on F.friend = U.id and F.user = ' + req.user.id ;
 	var search = '';
 	if(req.query.s) {
-		qry +=' and U.name like ?';
-		search = req.query.s;
+		qry +=' and U.name like ?' ;
+		search = req.query.s ;
 	}
 	DB.conn.queryAsync(qry,'%'+search+'%').then(function(friends){
-		res(friends) ;
+		res(friends);
 	});
 }
 

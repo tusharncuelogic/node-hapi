@@ -80,7 +80,10 @@ module.exports = [{
     {
         method: 'GET',
         path: '/users',
-        handler: User.users
+        handler: User.users,
+        config:{
+            auth:'token'
+        }        
     },    
     {
         method: 'GET',
@@ -93,7 +96,7 @@ module.exports = [{
                 }
             }
         }
-    },    
+    },
     {
         method: 'GET',
         path: '/friend/add/{friendId?}',
