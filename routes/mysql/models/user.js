@@ -1,5 +1,6 @@
-var md5 = require('md5') ;
+var md5= require('md5') ;
 var DB = require('../config.js') ;
+var Promise = require('bluebird');
 //Signup
 module.exports.signup = function(req,res) {
 	var user = req.payload ;
@@ -23,7 +24,7 @@ module.exports.login = function(req,res) {
       		res({error:"Invalid credentials. Please try with different credentials"}) ;
       	}
       	else {
-      		var user  = rows[0] ;      		
+      		var user  = rows[0] ;
       		var token = jwt.encode(rows,jwt_secret) ;
       		DB.conn.queryAsync('UPDATE '+DB.tbl_users+' SET token = "'+token+'" where id = '+user.id).then(function(result) {
 		      res({success : "User logged in successfully",token : token});
@@ -99,51 +100,94 @@ module.exports.friends =  function(req, res) {
 	});
 }
 
-module.exports.friend_add =  function(req,res) {	
-	DB.conn.queryAsync('SELECT * FROM '+DB.tbl_friends+' where user = ? and friend = ?', [ req.user.id , req.params.friendId ]).then(function(rows) {
-		if(rows.length == 0){
-			DB.conn.queryAsync('INSERT INTO '+DB.tbl_friends+' SET ?', {user : req.user.id , friend: req.params.friendId}).then(function(result) {
-		      res({success: "Friend added successfully"}) ;
-		    });
-		}
-		else
-		{
-			res({success: "Friend already exist"}) ;
-		}
+module.exports.friend_add =  function(req,res) {
+	isNotFriend(req.user.id,req.params.friendId).then(addFriend).then(function(response){
+		res(response);
+	}).catch(function(err) {
+		res(err);
 	});
 }
 
-module.exports.friend_remove =  function(req, res) {	
-	DB.conn.queryAsync('SELECT * FROM '+DB.tbl_friends+' where user = ? and friend = ?',[req.user.id, req.params.friendId]).then(function(friends) {
-      	if(friends.length == 0) {
-			res({success: "No such friend exist"}) ;
-		}
-		else
-		{
-			DB.conn.queryAsync('DELETE FROM '+DB.tbl_friends+' WHERE id = ? ',friends[0].id ).then(function(result) {
-		      res({success: "Friend removed successfully"}) ;
-		    });
-		}
-    });
+module.exports.friend_remove =  function(req, res) {
+	isFriend(req.user.id,req.params.friendId).then(removeFriend).then(function(response){
+		res(response) ;
+	}).catch(function(err){
+		res(err);
+	});
 }
 
-module.exports.friend_view =  function(req, res) {	
-	DB.conn.queryAsync('SELECT * FROM '+DB.tbl_friends+' where user = ? and friend = ?',[req.user.id, req.params.friendId]).then(function(friends) {
-      	if(err) throw(err) ;
-      	if(friends.length == 0) {
-			res({error: "It's not your friend."}) ;
-		}
-		else
-		{
-			DB.conn.queryAsync('SELECT U.name , U.email , U.contact FROM '+DB.tbl_users+' as U where id = ? ',req.params.friendId).then(function(friend) {
-		      res(friend) ;
-		    });			
-		}
-    });
+module.exports.friend_view =  function(req, res) {
+	isFriend(req.user.id,req.params.friendId).then(viewFriend).then(function(response){
+		res(response) ;
+	}).catch(function(err){
+		res(err);
+	});
 }
 
 module.exports.logout = function(req,res) {
 	DB.conn.queryAsync('UPDATE '+DB.tbl_users+' SET token = "" where id = ?', req.user.id).then(function(result) {
       res({success : "You have successfully logged out"});
     });
+}
+
+//Functions
+function isFriend(userId,friendId) {
+	return new Promise(function(resolve,reject) {
+		DB.conn.queryAsync('SELECT * FROM '+DB.tbl_friends+' where user = ? and friend = ?',[userId,friendId]).then(function(friends) {
+	      	if(friends.length == 0) {
+				reject("Invalid friend ID") ;
+			}
+			else
+			{
+				resolve(friends[0].id) ;
+			}
+	    });
+	});
+}
+
+function isNotFriend(userId,friendId) {
+	return new Promise(function(resolve,reject) {
+		DB.conn.queryAsync('SELECT * FROM '+DB.tbl_friends+' where user = ? and friend = ?',[userId,friendId]).then(function(friends) {
+			console.log({user : userId , friend: friendId});
+	      	if(friends.length == 0) {
+				resolve({user : userId , friend: friendId}) ;
+			}
+			else
+			{
+				reject({error:"Already friend"}) ;						
+			}
+	    });
+	});
+}
+
+function addFriend(dt) {
+	return new Promise(function(resolve, reject) {
+		DB.conn.queryAsync('INSERT INTO '+DB.tbl_friends+' SET ?', dt).then(function(result) {
+	      resolve("Friend added successfully") ;
+	    },
+		function(err) {
+			reject(err) ;
+		});
+	});	
+}
+
+function removeFriend(friendId) {
+	return new Promise(function(resolve,reject) {
+		DB.conn.queryAsync('DELETE FROM '+DB.tbl_friends+' WHERE id = ? ',friendId).then(function(result) {
+			console.log("okkkkk");
+			console.log(result);
+	    	resolve("Friend removed successfully");
+	    },function(err){reject({message:"Error in deleting friend"})});
+	});
+}
+
+function viewFriend(friendId) {
+	return new Promise(function(resolve,reject) {
+		DB.conn.queryAsync('SELECT U.name , U.email , U.contact FROM '+DB.tbl_users+' as U where id = ? ',friendId ).then(function(friend) {
+	      resolve(friend) ;
+	    },
+	    function(err){
+	    	reject(err);
+	    });
+	});	
 }

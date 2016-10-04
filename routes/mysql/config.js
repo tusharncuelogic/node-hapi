@@ -6,5 +6,6 @@ const connection = mysql.createConnection({
   password : 'root',
   database : 'users_db'
 });
-var conn = Bluebird.promisifyAll(connection) ;
+
+var conn = Bluebird.promisifyAll(connection);
 module.exports = {conn:conn , tbl_users:'users', tbl_friends:'friends'};

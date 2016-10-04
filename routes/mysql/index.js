@@ -2,7 +2,7 @@ const Joi = require('joi') ;
 var User = require('./models/user.js') ;
 var valid = {
     id : Joi.number(),
-    name:Joi.string().min(3).max(10),
+    name:Joi.string().min(3).max(30),
     email : Joi.string().email(),
     password : Joi.string().alphanum().min(3).max(20),
     contact : Joi.number()
